@@ -9,17 +9,25 @@ const { MONGODB_URI } = require('../config');
 const Note = require('../models/note');
 
 // Find/Search for notes using Note.find
+// test - clint's solution:
+
 // mongoose.connect(MONGODB_URI)
 //   .then(() => {
 //     const searchTerm = 'lady gaga';
 //     let filter = {};
 
 //     if (searchTerm) {
-//       filter.title = { $regex: searchTerm, $options: 'i' };
-//     }
+//       // or([filter.title = { $regex: searchTerm, $options: 'i' }, filter.content = { $regex: searchTerm, $options: 'i' }])
+//       // filter.title = { $regex: searchTerm, $options: 'i' };
+//       // filter.content = { $regex: searchTerm, $options: 'i' };
+//       const searchArray = [];
+//       searchArray.push({'title': {$regex: searchTerm, $options: 'i' }});
+//       searchArray.push({ 'title': {$regex: searchTerm, $options: 'i' }});
+//       filter = {$or: searchArray};
+//     };
 
-//     return Note.find(filter).sort({ updatedAt: 'desc' });
-//   })
+//     return Note.find(filter).sort({ updatedAt: 'desc' })
+
 //   .then(results => {
 //     console.log(results);
 //   })
@@ -91,18 +99,18 @@ const Note = require('../models/note');
 //   });
 
 //Delete a note by id using Note.findByIdAndRemove
-mongoose.connect(MONGODB_URI)
-  .then(() => {
-    const id = "5b732c0bf5e64707d55898dd";
-    return Note.findByIdAndRemove(id);
-  })
-  .then(() => {
-    console.log("note deleted");
-  })
-  .then(() => {
-    return mongoose.disconnect();
-  })
-  .catch(err => {
-    console.error(`ERROR: ${err.message}`);
-    console.error(err);
-  });
+// mongoose.connect(MONGODB_URI)
+//   .then(() => {
+//     const id = "5b732c0bf5e64707d55898dd";
+//     return Note.findByIdAndRemove(id);
+//   })
+//   .then(() => {
+//     console.log("note deleted");
+//   })
+//   .then(() => {
+//     return mongoose.disconnect();
+//   })
+//   .catch(err => {
+//     console.error(`ERROR: ${err.message}`);
+//     console.error(err);
+//   });
