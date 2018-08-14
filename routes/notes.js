@@ -1,19 +1,36 @@
 'use strict';
 
 const express = require('express');
+// const mongoose = require('mongoose');
 
 const router = express.Router();
+const Note = require('../models/note');
 
 /* ========== GET/READ ALL ITEMS ========== */
 router.get('/', (req, res, next) => {
+  const searchTerm = req.query.searchTerm;
+  let filter = {};
 
-  console.log('Get All Notes');
-  res.json([
-    { id: 1, title: 'Temp 1' },
-    { id: 2, title: 'Temp 2' },
-    { id: 3, title: 'Temp 3' }
-  ]);
+  if (searchTerm) {
+    const searchArray = [];
+    searchArray.push({'title': {$regex: searchTerm, $options: 'i' }});
+    searchArray.push({ 'title': {$regex: searchTerm, $options: 'i' }});
+    filter = {$or: searchArray};
+  }
 
+  Note
+    .find(filter)
+    .sort({ updatedAt: 'desc' })
+    .then(result => {
+      if(result) {
+        res.json(result);
+      } else {
+        next();
+      }
+    })
+    .catch(err => {
+      next(err);
+    });
 });
 
 /* ========== GET/READ A SINGLE ITEM ========== */
