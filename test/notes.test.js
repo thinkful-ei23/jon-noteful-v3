@@ -204,10 +204,10 @@ describe('Noteful API - Notes' , function() {
         })
         .then(function(res) {
           expect(res).to.have.status(204);
-        })
-        // .then(count => {
-        //   expect(count).to.equal(0);
-        // });
+        });
+      // .then(count => {
+      //   expect(count).to.equal(0);
+      // });
     });
   });
 
