@@ -9,9 +9,11 @@ const { TEST_MONGODB_URI } = require('../config');
 
 const Note = require('../models/note');
 const Folder = require('../models/folder');
+const Tag = require('../models/tag');
 
 const seedNotes = require('../db/seed/notes');
 const seedFolders = require('../db/seed/folders');
+const seedTags = require('../db/seed/tags');
 
 const expect = chai.expect;
 chai.use(chaiHttp);
@@ -25,7 +27,8 @@ describe('Noteful API - Notes' , function() {
   beforeEach(function () {
     return Promise.all([
       Note.insertMany(seedNotes),
-      Folder.insertMany(seedFolders)
+      Folder.insertMany(seedFolders),
+      Tag.insertMany(seedTags)
     ])
       .then(() => {
         return Note.createIndexes();
@@ -72,7 +75,7 @@ describe('Noteful API - Notes' , function() {
           expect(res.body).to.have.length(data.length);
           res.body.forEach(function (item, i) {
             expect(item).to.be.a('object');
-            expect(item).to.have.keys('id', 'title', 'content', 'createdAt', 'updatedAt', 'folderId');
+            expect(item).to.have.keys('id', 'title', 'content', 'tags', 'createdAt', 'updatedAt', 'folderId');
           });
         });
     });
@@ -159,7 +162,7 @@ describe('Noteful API - Notes' , function() {
           expect(res).to.be.json;
 
           expect(res.body).to.be.an('object');
-          expect(res.body).to.have.keys('id', 'title', 'content', 'createdAt', 'updatedAt', 'folderId');
+          expect(res.body).to.have.keys('id', 'title', 'content', 'tags', 'createdAt', 'updatedAt', 'folderId');
 
           // 3) then compare database results to API response
           expect(res.body.id).to.equal(data.id);
@@ -212,7 +215,7 @@ describe('Noteful API - Notes' , function() {
           expect(res).to.have.header('location');
           expect(res).to.be.json;
           expect(res.body).to.be.a('object');
-          expect(res.body).to.have.keys('id', 'title', 'content', 'createdAt', 'updatedAt');
+          expect(res.body).to.have.keys('id', 'title', 'content', 'tags', 'createdAt', 'updatedAt');
           // 2) then call the database
           return Note.findById(res.body.id);
         })
@@ -265,7 +268,7 @@ describe('Noteful API - Notes' , function() {
           expect(res).to.have.status(200);
           expect(res).to.be.json;
           expect(res.body).to.be.a('object');
-          expect(res.body).to.have.keys('id', 'title', 'content', 'createdAt', 'updatedAt', 'folderId');
+          expect(res.body).to.have.keys('id', 'title', 'content', 'tags', 'createdAt', 'updatedAt', 'folderId');
           expect(res.body.id).to.equal(data.id);
           expect(res.body.title).to.equal(updateData.title);
           expect(res.body.content).to.equal(updateData.content);

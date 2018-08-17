@@ -6,9 +6,10 @@ const mongoose = require('mongoose');
 const router = express.Router();
 const Note = require('../models/note');
 
+
 /* ========== GET/READ ALL ITEMS ========== */
 router.get('/', (req, res, next) => {
-  const { searchTerm, folderId } = req.query;
+  const { searchTerm, folderId, tagId  } = req.query;
   let filter = {};
 
   if (searchTerm) {
@@ -20,8 +21,13 @@ router.get('/', (req, res, next) => {
     filter.folderId = folderId;
   }
 
+  if (tagId) {
+    filter.tags = tagId;
+  }
+
   Note
     .find(filter)
+    .populate('tags')
     .sort({ updatedAt: 'desc' })
     .then(result => {
       res.json(result);
@@ -44,6 +50,7 @@ router.get('/:id', (req, res, next) => {
 
   Note
     .findById(id)
+    .populate('tags')
     .then(result => {
       if (result) {
         res.json(result);
@@ -59,7 +66,7 @@ router.get('/:id', (req, res, next) => {
 /* ========== POST/CREATE AN ITEM ========== */
 router.post('/', (req, res, next) => {
 
-  const { title, content, folderId } = req.body;
+  const { title, content, folderId, tags } = req.body;
 
   if (!title) {
     const err = new Error('Missing `title` in request body');
@@ -73,7 +80,13 @@ router.post('/', (req, res, next) => {
     return next(err);
   }
 
-  const newItem = { title, content, folderId };
+  if (tags & !mongoose.Types.ObjectId.isValid(tags)) {
+    const err = new Error('The `tag id` is not valid');
+    err.status = 400;
+    return next(err);
+  }
+
+  const newItem = { title, content, folderId, tags };
 
   Note
     .create(newItem)
@@ -92,7 +105,7 @@ router.post('/', (req, res, next) => {
 router.put('/:id', (req, res, next) => {
 
   const { id } = req.params;
-  const { title, content, folderId } = req.body;
+  const { title, content, folderId, tags } = req.body;
 
   /***** Never trust users - validate input *****/
   if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -112,7 +125,14 @@ router.put('/:id', (req, res, next) => {
     err.status = 400;
     return next(err);
   }
-  const updateObj = { title, content, folderId };
+
+  if (tags & !mongoose.Types.ObjectId.isValid(tags)) {
+    const err = new Error('The `tag id` is not valid');
+    err.status = 400;
+    return next(err);
+  }
+  
+  const updateObj = { title, content, folderId, tags };
 
   Note
     .findByIdAndUpdate(id, { $set: updateObj }, { new: true })

@@ -9,59 +9,62 @@ const { TEST_MONGODB_URI } = require('../config');
 
 const Note = require('../models/note');
 const Folder = require('../models/folder');
+const Tag = require('../models/tag');
 
 const seedNotes = require('../db/seed/notes');
 const seedFolders = require('../db/seed/folders');
+const seedTags = require('../db/seed/tags');
 
 const expect = chai.expect;
 chai.use(chaiHttp);
 
-describe('Noteful API - Folders', function() {
-  before(function() {
+describe('Noteful API - Tags', function () {
+  before(function () {
     return mongoose.connect(TEST_MONGODB_URI)
       .then(() => mongoose.connection.db.dropDatabase());
   });
 
-  beforeEach(function() {
+  beforeEach(function () {
     return Promise.all([
-      Folder.insertMany(seedFolders),
-      Folder.createIndexes() // look more into it
+      Tag.insertMany(seedTags),
+      Tag.createIndexes() // look more into it
     ]);
   });
 
-  afterEach(function() {
+  afterEach(function () {
     return mongoose.connection.db.dropDatabase();
   });
 
-  after(function() {
+  after(function () {
     return mongoose.disconnect();
   });
 
-  describe('GET /api/folders', function() {
-    it('should return correct number of folders', function() {
+  describe('GET /api/tags', function() {
+    it('should return all tags', function() {
       return Promise.all([
-        Folder
+        Tag
           .find(),
         chai
           .request(app)
-          .get('/api/folders')
+          .get('/api/tags')
       ])
         .then(([data, res]) => {
           expect(res).to.have.status(200);
           expect(res).to.be.json;
           expect(res.body).to.be.a('array');
           expect(res.body).to.have.length(data.length);
+          expect(res.body).to.have.lengthOf.at.least(1);
         });
     });
 
     it('should return a list with the correct fields and values', function () {
       return Promise.all([
-        Folder
+        Tag
           .find()
           .sort('name'),
         chai
           .request(app)
-          .get('/api/folders')
+          .get('/api/tags')
       ])
         .then(([data, res]) => {
           expect(res).to.have.status(200);
@@ -78,18 +81,24 @@ describe('Noteful API - Folders', function() {
           });
         });
     });
-  });
 
-  describe('GET /api/folders/:id', function() {
-    it('should return correct folder', function() {
+    // it('should return 404 for bad path', function() {
+    //   return chai
+    //     .request(app)
+
+  });
+  
+
+  describe('GET /api/tags/:id', function () {
+    it('should return the correct tag', function () {
       let data;
-      return Folder
+      return Tag
         .findOne()
         .then(_data => {
           data = _data;
           return chai
             .request(app)
-            .get(`/api/folders/${data.id}`);
+            .get(`/api/tags/${data.id}`);
         })
         .then((res) => {
           expect(res).to.have.status(200);
@@ -103,34 +112,35 @@ describe('Noteful API - Folders', function() {
         });
     });
 
-    it('should respond with status 404 and an error when `id` is not valid', function() {
+    it('should respond with status 404 when `id` is not valid', function() {
       return chai
         .request(app)
-        .get('/api/folders/NOT-A-VALID-ID')
+        .get('/api/tags/NOT-A-VALID-ID')
         .then(res => {
           expect(res).to.have.status(404);
-          expect(res.body.message).to.eql('The `id` is not valid');
+          expect(res.body.message).to.equal('The `id` is not valid');
         });
     });
 
-    it('should respond with a 404 for an id that does not exist', function() {
+    it('should respond with a 404 for an id that does not exist', function () {
       return chai
         .request(app)
-        .get('/api/folders/DOESNOTEXIST')
+        .get('/api/tags/DOESNOTEXIST')
         .then(res => {
           expect(res).to.have.status(404);
         });
     });
+  
   });
 
-  describe('POST /api/folders', function() {
-    it('should create and return a new folder when provided valid data', function() {
-      const newItem = { 'name': 'New Folder' };
+  describe('POST /api/tags', function() {
+    it('should create and return a new tag', function() {
+      const newItem = { 'name': 'new tag' };
       let body;
 
       return chai
         .request(app)
-        .post('/api/folders')
+        .post('/api/tags')
         .send(newItem)
         .then(function (res) {
           body = res.body;
@@ -139,7 +149,7 @@ describe('Noteful API - Folders', function() {
           expect(res).to.be.json;
           expect(body).to.be.a('object');
           expect(body).to.have.keys('id', 'name', 'createdAt', 'updatedAt');
-          return Folder.findById(body.id);
+          return Tag.findById(body.id);
         })
         .then(data => {
           expect(body.id).to.equal(data.id);
@@ -151,11 +161,11 @@ describe('Noteful API - Folders', function() {
 
     it('should return error when name is missing', function() {
       const newItem = {
-        'noName': 'Missing name'
+        'noName': 'missing name'
       };
       return chai
         .request(app)
-        .post('/api/folders')
+        .post('/api/tags')
         .send(newItem)
         .then(res => {
           expect(res).to.have.status(400);
@@ -164,43 +174,51 @@ describe('Noteful API - Folders', function() {
           expect(res.body.message).to.equal('Missing `name` in request body');
         });
     });
-    // not working - getting status code of 201 instead of 400
-    // it('should return an error when given a duplicate name', function () {
-    //   return Folder
-    //     .findOne()
-    //     .then(data => {
-    //       const newItem = { 'name': data.name };
-    //       return chai
-    //         .request(app)
-    //         .post('/api/folders')
-    //         .send(newItem);
-    //     })
+
+    it('should return an error when given a duplicate name', function () {
+      return Tag
+        .findOne()
+        .then(data => {
+          const newItem = { 'name': data.name };
+          return chai
+            .request(app)
+            .post('/api/tags')
+            .send(newItem);
+        })
+        .then(res => {
+          expect(res).to.have.status(400);
+          expect(res).to.be.json;
+          expect(res.body).to.be.a('object');
+          expect(res.body.message).to.equal('Tag name already exists');
+        });
+    });
+
+    // it('should return a 404 for a bad path', function() {
+    //   const newItem = {'name': 'Testing name'};
+    //   return chai.request(app).post('api/taggs').send(newItem)
     //     .then(res => {
-    //       expect(res).to.have.status(400);
-    //       expect(res).to.be.json;
-    //       expect(res.body).to.be.a('object');
-    //       expect(res.body.message).to.equal('Folder name already exists');
+    //       expect(res).to.have.status(404);
     //     });
     // });
   });
 
-  describe('PUT /api/folders/:id', function() {
-    it('should update the folder on PUT', function() {
+  describe('PUT /api/tags/:id', function() {
+    it('should update the tag on PUT', function () {
       const updateData = {
         'name': 'Testing updated name'
       };
       let data;
 
-      return Folder
+      return Tag
         .findOne()
         .then(_data => {
           data = _data;
           return chai
             .request(app)
-            .put(`/api/folders/${data.id}`)
+            .put(`/api/tags/${data.id}`)
             .send(updateData);
         })
-        .then(function(res) {
+        .then(function (res) {
           expect(res).to.have.status(200);
           expect(res).to.be.json;
           expect(res.body).to.be.a('object');
@@ -210,34 +228,59 @@ describe('Noteful API - Folders', function() {
     });
 
     it('should respond with a 400 status code when id is not valid', function() {
-      const updateData = {
-        'name': 'Testing updated name'
-      };
+      const updateData = {'name': 'Testing updated name'};
       return chai
         .request(app)
-        .put('/api/folders/NOT-A-VALID-ID')
+        .put('/api/tags/NOT-A-VALID-ID')
         .send(updateData)
         .then(res => {
           expect(res).to.have.status(400);
           expect(res.body.message).to.equal('The `id` is not valid');
         });
     });
-  });  
-  describe('DELETE /api/folders/:id', function() {
-    it('should delete the folder and respond with 204', function() {
+
+    it('should return an error when given a duplicate name', function() {
+      return Tag.find().limit(2)
+        .then(results => {
+          const [item1, item2] = results;
+          item1.name = item2.name;
+          return chai.request(app)
+            .put(`/api/tags/${item1.id}`)
+            .send(item1);
+        })
+        .then(res => {
+          expect(res).to.has.status(400);
+          expect(res).to.be.json;
+          expect(res).to.be.a('object');
+          expect(res.body.message).to.equal('The tag name already exists');
+        });
+    });
+
+    it('should respond with a 404 for an id that does not exist', function () {
+      return chai
+        .request(app)
+        .get('/api/tags/DOESNOTEXIST')
+        .then(res => {
+          expect(res).to.have.status(404);
+        });
+    });
+  });
+
+  describe('DELETE /api/tags/:id', function() {
+    it('should delete the tag and respond with 204', function() {
       let data;
-      return Folder
+      return Tag
         .findOne()
         .then(_data => {
           data = _data;
           return chai
             .request(app)
-            .delete(`/api/folders/${data.id}`);
+            .delete(`/api/tags/${data.id}`);
         })
         .then(function(res) {
           expect(res).to.have.status(204);
           expect(res.body).to.be.empty;
-          return Folder.count({_id: data.id});
+          return Tag.count({_id: data.id});
         })
         .then(count => {
           expect(count).to.equal(0);

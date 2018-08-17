@@ -4,21 +4,16 @@ const express = require('express');
 const mongoose = require('mongoose');
 
 const router = express.Router();
-const Folder = require('../models/folder');
+const Tag = require('../models/tag');
 const Note = require('../models/note');
+
+
 
 // GET all /folders 
 // Sort by name
+
 router.get('/', (req, res, next) => {
-  // console.log('Get All Notes');
-  // const { searchTerm } = req.query;
-  // let filter = {};
-
-  // if(searchTerm) {
-  //   filter = {name: {$regex: searchTerm, $options: 'i'}};
-  // }
-
-  Folder
+  Tag
     .find()
     .sort('name')
     .then(result => {
@@ -29,21 +24,17 @@ router.get('/', (req, res, next) => {
     });
 });
 
-
-// GET /folders by id
-// Validate the id is a Mongo ObjectId
-// return a 200 response or 404 Not found
 router.get('/:id', (req, res, next) => {
-
   const { id } = req.params;
 
-  if(!mongoose.Types.ObjectId.isValid(id)){
+  // Add validation that protects against invalid Mongo ObjectIds and prevents unnecessary database queries.
+  if (!mongoose.Types.ObjectId.isValid(id)) {
     const err = new Error('The `id` is not valid');
     err.status = 404;
     return next(err);
   }
 
-  Folder
+  Tag
     .findById(id)
     .then(result => {
       if (result) {
@@ -57,11 +48,6 @@ router.get('/:id', (req, res, next) => {
     });
 });
 
-
-// POST /folders to create a new folder
-// Validate the incoming body has a name field
-// Respond with a 201 status and location header
-// Catch duplicate key error code 11000 and respond with a helpful error message(see below for sample code)
 router.post('/', (req, res, next) => {
   const { name } = req.body;
 
@@ -73,24 +59,22 @@ router.post('/', (req, res, next) => {
     return next(err);
   }
 
-  Folder
+  Tag
     .create(newItem)
     .then(result => {
-      res.location(`${req.originalUrl}/${result.id}`).status(201).json(result);
+      res.location(`${req.originalUrl}/${result.id}`)
+        .status(201)
+        .json(result);
     })
     .catch(err => {
       if (err.code === 11000) {
-        err = new Error('Folder name already exists');
+        err = new Error('Tag name already exists');
         err.status = 400;
       }
       next(err);
     });
 });
 
-// PUT / folders by id to update a folder name
-// Validate the incoming body has a name field
-// Validate the id is a Mongo ObjectId
-// Catch duplicate key error code 11000 and respond with a helpful error message
 router.put('/:id', (req, res, next) => {
   const { id } = req.params;
   const { name } = req.body;
@@ -109,27 +93,28 @@ router.put('/:id', (req, res, next) => {
 
   const updateObj = { name };
 
-  Folder
-    .findByIdAndUpdate(id, { $set: updateObj }, { new: true })
+  Tag
+    .findByIdAndUpdate(id, updateObj, {new: true})
     .then(result => {
       res.json(result);
     })
     .catch(err => {
       if (err.code === 11000) {
-        err = new Error('The folder name already exists');
+        err = new Error('The tag name already exists');
         err.status = 400;
       }
       next(err);
     });
 });
 
-// DELETE / folders by id which deletes the folder AND the related notes
-// Respond with a 204 status
 router.delete('/:id', (req, res, next) => {
   const { id } = req.params;
 
-  Folder
-    .findByIdAndRemove(id)
+  const tagRemove = Tag.findByIdAndRemove(id);
+
+  const removeNoteTag = Note.updateMany({ $pull:{tags: id} });
+
+  return Promise.all([tagRemove, removeNoteTag])
     .then(() => {
       res.sendStatus(204).end();
     })
@@ -137,5 +122,6 @@ router.delete('/:id', (req, res, next) => {
       next(err);
     });
 });
+
 
 module.exports = router;
