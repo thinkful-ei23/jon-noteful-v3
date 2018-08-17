@@ -65,24 +65,22 @@ router.get('/:id', (req, res, next) => {
 router.post('/', (req, res, next) => {
   const { name } = req.body;
 
+  const newItem = { name };
+
   if (!name) {
     const err = new Error('Missing `name` in request body');
     err.status = 400;
     return next(err);
   }
 
-  const newItem = {
-    name: name
-  };
-
   Folder
     .create(newItem)
     .then(result => {
-      res.json(result);
+      res.location(`${req.originalUrl}/${result.id}`).status(201).json(result);
     })
     .catch(err => {
       if (err.code === 11000) {
-        err = new Error('The folder name already exists');
+        err = new Error('Folder name already exists');
         err.status = 400;
       }
       next(err);
@@ -105,7 +103,7 @@ router.put('/:id', (req, res, next) => {
 
   if (!mongoose.Types.ObjectId.isValid(id)) {
     const err = new Error('The `id` is not valid');
-    err.status = 404;
+    err.status = 400;
     return next(err);
   }
 
