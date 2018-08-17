@@ -1,7 +1,7 @@
 'use strict';
 
 const express = require('express');
-// const mongoose = require('mongoose');
+const mongoose = require('mongoose');
 
 const router = express.Router();
 const Note = require('../models/note');
@@ -120,7 +120,7 @@ router.delete('/:id', (req, res, next) => {
   Note
     .findByIdAndRemove(id)
     .then(() => {
-      res.sendStatus(204);
+      res.sendStatus(204).end();
     })
     .catch(err => {
       next(err);
