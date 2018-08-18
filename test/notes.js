@@ -229,6 +229,37 @@ describe('Noteful API - Notes' , function() {
         });
     });
 
+    it('should return an error when missing "title" field', function () {
+      const newItem = {
+        content: 'Lorem ipsum dolor sit amet, sed do eiusmod tempor...'
+      };
+      return chai.request(app)
+        .post('/api/notes')
+        .send(newItem)
+        .then(res => {
+          expect(res).to.have.status(400);
+          expect(res).to.be.json;
+          expect(res.body).to.be.a('object');
+          expect(res.body.message).to.equal('Missing `title` in request body');
+        });
+    });
+
+    it('should return an error when "title" is an empty string', function () {
+      const updateData = { 'title': ''};
+      let data;
+      return chai
+        .request(app)
+        .post('/api/notes/')
+        .send(updateData)
+        .then(res => {
+          expect(res).to.have.status(400);
+          expect(res).to.be.json;
+          expect(res.body).to.be.a('object');
+          expect(res.body.message).to.equal('Missing `title` in request body');
+        });
+
+    });
+
     it('should return error when title is missing', function() {
       const newItem = {
         'content': 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor...'
@@ -242,6 +273,42 @@ describe('Noteful API - Notes' , function() {
           expect(res).to.be.json;
           expect(res.body).to.be.a('object');
           expect(res.body.message).to.equal('Missing `title` in request body');
+        });
+    });
+
+    it('should return 400 code when folderId is not valid', function() {
+      const newItem = {
+        'title': 'Testing Post',
+        'content': 'Testing Post',
+        'folderId': 'NOT-A-VALID-ID'
+      };
+      return chai
+        .request(app)
+        .post('/api/notes')
+        .send(newItem)
+        .then(res => {
+          expect(res).to.have.status(400);
+          expect(res).to.be.json;
+          expect(res.body).to.be.a('object');
+          expect(res.body.message).to.equal('The `folderId` is not valid');
+        });
+    });
+
+    it('should return 400 code when tag `id` is not valid', function () {
+      const newItem = {
+        'title': 'Testing Post',
+        'content': 'Testing Post',
+        'tags': ['NOT-A-VALID-ID']
+      };
+      return chai
+        .request(app)
+        .post('/api/notes')
+        .send(newItem)
+        .then(res => {
+          expect(res).to.have.status(400);
+          expect(res).to.be.json;
+          expect(res.body).to.be.a('object');
+          expect(res.body.message).to.equal('The tag `id` is not valid');
         });
     });
   });
@@ -277,6 +344,7 @@ describe('Noteful API - Notes' , function() {
         });
     });
 
+
     it('should return error when id is not valid', function() {
       const updateData = {
         'title': 'Testing Title',
@@ -292,6 +360,25 @@ describe('Noteful API - Notes' , function() {
         });
     });
 
+    it('should respond with status 400 when `title` is missing', function() {
+      const updateItem = { 'content': 'Missing Title test'};
+      let data;
+      return Note
+        .findOne()
+        .then(_data => {
+          data = _data;
+          return chai
+            .request(app)
+            .put(`/api/notes/${data.id}`)
+            .send(updateItem);
+        })
+        .then(res => {
+          expect(res).to.have.status(400);
+          expect(res.body.message).to.equal('Missing `title` in request body');
+        });
+
+    });
+
     it('should respond with status 400 and an error message when `id` is not valid', function () {
       const updateItem = {
         'title': 'What about dogs?!',
@@ -304,6 +391,50 @@ describe('Noteful API - Notes' , function() {
         .then(res => {
           expect(res).to.have.status(400);
           expect(res.body.message).to.eq('The `id` is not valid');
+        });
+    });
+
+    it('should respond with status 400 when folder `id` is not valid', function() {
+      const updateItem = {
+        'title': 'What about dogs?!',
+        'content': 'woof woof',
+        'folderId': 'NOT-A-VALID-ID'
+      };
+      return Note
+        .findOne()
+        .then(data => {
+          return chai
+            .request(app)
+            .put(`/api/notes/${data.id}`)
+            .send(updateItem);
+        })
+        .then(res => {
+          expect(res).to.have.status(400);
+          expect(res).to.be.json;
+          expect(res.body).to.be.a('object');
+          expect(res.body.message).to.equal('The `folderId` is not valid');
+        });
+    });
+
+    it('should respond with status 400 when tag `id` is not valid', function () {
+      const updateItem = {
+        'title': 'What about dogs?!',
+        'content': 'woof woof',
+        'tags': ['NOT-A-VALID-ID']
+      };
+      return Note
+        .findOne()
+        .then(data => {
+          return chai
+            .request(app)
+            .put(`/api/notes/${data.id}`)
+            .send(updateItem);
+        })
+        .then(res => {
+          expect(res).to.have.status(400);
+          expect(res).to.be.json;
+          expect(res.body).to.be.a('object');
+          expect(res.body.message).to.equal('The tag `id` is not valid');
         });
     });
   });
