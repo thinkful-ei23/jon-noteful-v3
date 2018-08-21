@@ -26,7 +26,7 @@ router.post('/', localAuth, function (req, res) {
 });
 
 // Refresh - allows users to exchange older tokens with fresh ones with later expiration
-const jwtAuth = passport.authentication('jwt', { session: false, failWithError: true });
+const jwtAuth = passport.authenticate('jwt', { session: false, failWithError: true });
 
 router.post('/refresh', jwtAuth, (req, res) => {
   const authToken = createAuthToken(req.user);
