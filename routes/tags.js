@@ -2,16 +2,17 @@
 
 const express = require('express');
 const mongoose = require('mongoose');
+const passport = require('passport');
 
 const router = express.Router();
 const Tag = require('../models/tag');
 const Note = require('../models/note');
 
-
+// Protect endpoints using JWT Strategy
+router.use('/', passport.authenticate('jwt', { session: false, failWithError: true }));
 
 // GET all /folders 
 // Sort by name
-
 router.get('/', (req, res, next) => {
   Tag
     .find()

@@ -2,10 +2,14 @@
 
 const express = require('express');
 const mongoose = require('mongoose');
+const passport = require('passport');
 
 const router = express.Router();
 const Folder = require('../models/folder');
 const Note = require('../models/note');
+
+// Protect endpoints using JWT Strategy
+router.use('/', passport.authenticate('jwt', { session: false, failWithError: true }));
 
 // GET all /folders 
 // Sort by name
