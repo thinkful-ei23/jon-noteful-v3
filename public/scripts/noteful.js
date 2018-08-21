@@ -397,7 +397,9 @@ const noteful = (function () {
 
       api.create('/api/login', loginUser)
         .then(response => {
-          store.currentUser = response;
+          // store.currentUser = response;
+          // store.authorized = true;
+          store.authToken = response.authToken;
           store.authorized = true;
           loginForm[0].reset();
 

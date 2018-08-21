@@ -11,6 +11,7 @@ const options = { session: false, failWithError: true };
 
 const localAuth = passport.authenticate('local', options);
 
+// function that runs jwt.sign()
 function createAuthToken(user) {
   return jwt.sign({ user }, JWT_SECRET, {
     subject: user.username,
@@ -18,7 +19,16 @@ function createAuthToken(user) {
   });
 }
 
+// Generates a JWT on POST /api/login
 router.post('/', localAuth, function (req, res) {
+  const authToken = createAuthToken(req.user);
+  res.json({ authToken });
+});
+
+// Refresh - allows users to exchange older tokens with fresh ones with later expiration
+const jwtAuth = passport.authentication('jwt', { session: false, failWithError: true });
+
+router.post('/refresh', jwtAuth, (req, res) => {
   const authToken = createAuthToken(req.user);
   res.json({ authToken });
 });
