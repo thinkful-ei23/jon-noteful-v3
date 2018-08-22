@@ -11,12 +11,17 @@ const Tag = require('../models/tag');
 const router = express.Router();
 
 // Protect endpoints using JWT Strategy
+
 router.use('/', passport.authenticate('jwt', { session: false, failWithError: true }));
 
 /* ========== GET/READ ALL ITEMS ========== */
 router.get('/', (req, res, next) => {
   const { searchTerm, folderId, tagId  } = req.query;
-  let filter = {};
+  
+  // 8/22
+  // const userId = req.user.id;
+  // filter = {userId};
+  let filter = {}; // remove
 
   if (searchTerm) {
     const re = new RegExp(searchTerm, 'i');
