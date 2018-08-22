@@ -17,11 +17,10 @@ router.use('/', passport.authenticate('jwt', { session: false, failWithError: tr
 /* ========== GET/READ ALL ITEMS ========== */
 router.get('/', (req, res, next) => {
   const { searchTerm, folderId, tagId  } = req.query;
-  
-  // 8/22
-  // const userId = req.user.id;
-  // filter = {userId};
-  let filter = {}; // remove
+
+  const userId = req.user.id;
+
+  let filter = {userId};
 
   if (searchTerm) {
     const re = new RegExp(searchTerm, 'i');
@@ -52,6 +51,7 @@ router.get('/', (req, res, next) => {
 router.get('/:id', (req, res, next) => {
 
   const { id } = req.params;
+  const userId = req.user.id;
 
   if (!mongoose.Types.ObjectId.isValid(id)) {
     const err = new Error ('The `id` is not valid');
@@ -60,7 +60,7 @@ router.get('/:id', (req, res, next) => {
   }
 
   Note
-    .findById(id)
+    .findOne({ _id: id, userId })
     .populate('tags')
     .then(result => {
       if (result) {
@@ -77,7 +77,8 @@ router.get('/:id', (req, res, next) => {
 /* ========== POST/CREATE AN ITEM ========== */
 router.post('/', (req, res, next) => {
 
-  const { title, content, folderId, tags = []} = req.body;
+  const { title, content, folderId, tags } = req.body;
+  const userId = req.user.id;
 
   if (!title) {
     const err = new Error('Missing `title` in request body');
@@ -105,7 +106,7 @@ router.post('/', (req, res, next) => {
   //   return next(err);
   // }
 
-  const newItem = { title, content, folderId, tags };
+  const newItem = { title, content, folderId, tags, userId };
 
   Note
     .create(newItem)
@@ -125,6 +126,7 @@ router.put('/:id', (req, res, next) => {
 
   const { id } = req.params;
   const { title, content, folderId, tags } = req.body;
+  const userId = req.user.id;
 
   /***** Never trust users - validate input *****/
   if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -151,7 +153,7 @@ router.put('/:id', (req, res, next) => {
     return next(err);
   }
   
-  const updateObj = { title, content, folderId, tags };
+  const updateObj = { title, content, folderId, tags, userId };
 
   Note
     .findByIdAndUpdate(id, { $set: updateObj }, { new: true })
@@ -171,9 +173,10 @@ router.put('/:id', (req, res, next) => {
 /* ========== DELETE/REMOVE A SINGLE ITEM ========== */
 router.delete('/:id', (req, res, next) => {
   const { id } = req.params;
+  const userId = req.user.id;
 
   Note
-    .findByIdAndRemove(id)
+    .findByIdAndRemove({ _id: id, userId })
     .then(() => {
       res.sendStatus(204).end();
     })
