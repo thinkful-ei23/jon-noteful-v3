@@ -1,9 +1,8 @@
 'use strict';
-// Require the passport-jwt package and extract Strategy and ExtractJwt from the library
+
 const { Strategy: JwtStrategy, ExtractJwt } = require('passport-jwt');
 const { JWT_SECRET } = require('../config');
 
-// Create an options object and then create a new JWT strategy using the option object
 const options = {
   secretOrKey: JWT_SECRET,
   jwtFromRequest: ExtractJwt.fromAuthHeaderWithScheme('Bearer'),
