@@ -8,6 +8,6 @@ deploy:
   provider: heroku
   api_key:
     secure: TBMk6XwnMxFNNZcNjqHiTiXIrZQjobF02WWwLyoCOy8xQNyhfM852xC5FglRJU+y35spUbIEZxGN4ynEUDIGsZwLM6ikyhgwpJfy8eMjpXe3JplSjY+BVXnB39Gk1DrcbW5QGsaU/uV6cx3DE2qm2rFe/I+Jzyx4w2H/4GoIY7ksZHIQpa7a9cxonVj5/u7I2crjj0IwjSRWvNouR6rrBmGoWspq3Y+B0hWZIAcU9SM8DAVdme03/S6kqS/4j7ScYud0Kh/bsRlsEwT/SirlC/BYZnLuPZruZ72xwa1k1G9ARBeN/hoPfmB0VvBZphCzn6H6kYbSY/Nh02CggXnR3OmqBHo+87rms5Ail0XdJpsb8zwngkz04qHj0ONwj1LsiLVivcIRe+wSZi8GjrhSDttcLjbJ12eH9/hxz8eEP2knR6jLaEHKRRCrCXjsqcOsle+sfvMq79Rz2wX8zVaHkJfSmfUSvZt0Kq/HwUJ/cmI3m0iC0/JtY1/ajr8zAB3l4162uz+xjY2AOD+7wXsnmkVc6t3nOAlNert3gYi4XI8T1HVasVXRIHRLOrHdkk+Xvxtj55LvqZaH8VUSur55EbdJOfZ26x/OX4zXj0zee3NtM+D/QTSFxVVDuQwjMt0orQi5Dy7CP2a4eo2I6eWm00xhH6smklD8WcRhepCrqAk=
-  app: aqueous-savannah-40433
+  app: jons-noteful-v3
   on:
     repo: thinkful-ei23/jon-noteful-v3
