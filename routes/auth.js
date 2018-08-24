@@ -12,7 +12,7 @@ const localAuth = passport.authenticate('local', {
 });
 
 // Generates a JWT on POST /api/login
-router.post('/', localAuth, function (req, res) {
+router.post('/login', localAuth, function (req, res) {
   const authToken = createAuthToken(req.user);
   res.json({ authToken });
 });

@@ -1,14 +1,16 @@
 'use strict';
 
-const app = require('../server');
 const chai = require('chai');
 const chaiHttp = require('chai-http');
 const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
 
+const app = require('../server');
+
 const Folder = require('../models/folder');
-const seedFolders = require('../db/seed/folders');
 const User = require('../models/user');
+
+const seedFolders = require('../db/seed/folders');
 const seedUsers = require('../db/seed/users');
 
 const { TEST_MONGODB_URI, JWT_SECRET } = require('../config');
