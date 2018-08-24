@@ -8,6 +8,32 @@ const Note = require('../models/note');
 const Folder = require('../models/folder');
 const Tag = require('../models/tag');
 
+
+function validateFolderId(userId, folderId) {
+  if (!folderId) {
+    return Promise.resolve();
+  }
+  return Folder.findOne({ _id: folderId, userId })
+    .then(result => {
+      if (!result) {
+        return Promise.reject('InvalidFolder');
+      }
+    });
+}
+
+function validateTagIds(userId, tags = []) {
+  if (!tags.length) {
+    return Promise.resolve();
+  }
+  return Tag.find({ $and: [{ _id: { $in: tags }, userId }] })
+    .then(results => {
+      if (tags.length !== results.length) {
+        return Promise.reject('InvalidTag');
+      }
+    });
+}
+
+
 const router = express.Router();
 
 // Protect endpoints using JWT Strategy
@@ -80,45 +106,53 @@ router.post('/', (req, res, next) => {
   const { title, content, folderId, tags } = req.body;
   const userId = req.user.id;
 
+  const newNote = { title, content, folderId, tags, userId };
+
   if (!title) {
     const err = new Error('Missing `title` in request body');
     err.status = 400;
     return next(err);
   }
 
-  if (folderId && !mongoose.Types.ObjectId.isValid(folderId)) {
+  if (mongoose.Types.ObjectId.isValid(folderId)) {
+    newNote.folderId = folderId;
+  } else {
     const err = new Error('The `folderId` is not valid');
     err.status = 400;
     return next(err);
   }
 
-  // correction
-  if (tags && !tags.every(tag => mongoose.Types.ObjectId.isValid(tag))) {
+  const inValidTags = tags.map(tag => {
+    return mongoose.Types.ObjectId.isValid(tag);
+  });
 
-    const err = new Error('The tag `id` is not valid');
+  if (inValidTags.length === tags.length) {
+    newNote.tags = tags;
+  } else {
+    const err = new Error('The `tags.id` is not valid');
     err.status = 400;
     return next(err);
   }
 
-  // if (tags & !mongoose.Types.ObjectId.isValid(tags)) {
-  //   const err = new Error('The `tag id` is not valid');
-  //   err.status = 400;
-  //   return next(err);
-  // }
+  const valFolderIdProm = validateFolderId(userId, newNote.folderId);
+  const valTagIdsProm = validateTagIds(userId, newNote.tags);
 
-  const newItem = { title, content, folderId, tags, userId };
-
-  Note
-    .create(newItem)
+  Promise.all([valFolderIdProm, valTagIdsProm])
+    .then(() => Note.create(newNote))
     .then(result => {
-      res.location(`${req.originalUrl}/${result.id}`)
-        .status(201)
-        .json(result);
+      res.location(`${req.originalUrl}/${result.id}`).status(201).json(result);
     })
     .catch(err => {
+      if (err === 'InvalidFolder') {
+        err = new Error('The folder is not valid');
+        err.status = 400;
+      }
+      if (err === 'InvalidTag') {
+        err = new Error('The tag is not valid');
+        err.status = 400;
+      }
       next(err);
     });
-
 });
 
 /* ========== PUT/UPDATE A SINGLE ITEM ========== */
@@ -127,36 +161,44 @@ router.put('/:id', (req, res, next) => {
   const { id } = req.params;
   const { title, content, folderId, tags } = req.body;
   const userId = req.user.id;
+  const updateNote = { title, content, folderId, tags };
 
   /***** Never trust users - validate input *****/
-  if (!mongoose.Types.ObjectId.isValid(id)) {
-    const err = new Error('The `id` is not valid');
-    err.status = 400;
-    return next(err);
-  }
-
   if (!title) {
     const err = new Error('Missing `title` in request body');
     err.status = 400;
     return next(err);
   }
 
-  if (folderId && !mongoose.Types.ObjectId.isValid(folderId)) {
-    const err = new Error('The `folderId` is not valid');
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    const err = new Error('The `id` is not valid');
     err.status = 400;
     return next(err);
   }
 
-  if (tags && !tags.every(tag => mongoose.Types.ObjectId.isValid(tag))) {
-    const err = new Error('The tag `id` is not valid');
-    err.status = 400;
-    return next(err);
+  if (mongoose.Types.ObjectId.isValid(folderId)) {
+    updateNote.folderId = folderId;
   }
+
+  // if (folderId && !mongoose.Types.ObjectId.isValid(folderId)) {
+  //   const err = new Error('The `folderId` is not valid');
+  //   err.status = 400;
+  //   return next(err);
+  // }
+
+  // if (tags && !tags.every(tag => mongoose.Types.ObjectId.isValid(tag))) {
+  //   const err = new Error('The tag `id` is not valid');
+  //   err.status = 400;
+  //   return next(err);
+  // }
   
-  const updateObj = { title, content, folderId, tags, userId };
+  const valFolderIdProm = validateFolderId(userId, folderId);
+  const valTagIdsProm = validateTagIds(userId, tags);
 
-  Note
-    .findByIdAndUpdate(id, { $set: updateObj }, { new: true })
+  Promise.all([valFolderIdProm, valTagIdsProm])
+    .then(() => {
+      return Note.findByIdAndUpdate(id, updateNote, { new: true }).populate('tags');
+    })
     .then(result => {
       if (result) {
         res.json(result);
@@ -165,6 +207,14 @@ router.put('/:id', (req, res, next) => {
       }
     })
     .catch(err => {
+      if (err === 'InvalidFolder') {
+        err = new Error('The folder is not valid');
+        err.status = 400;
+      }
+      if (err === 'InvalidTag') {
+        err = new Error('The tag is not valid');
+        err.status = 400;
+      }
       next(err);
     });
 });
@@ -175,15 +225,16 @@ router.delete('/:id', (req, res, next) => {
   const { id } = req.params;
   const userId = req.user.id;
 
-  Note
-    .findByIdAndRemove({ _id: id, userId })
-    .then(() => {
-      res.sendStatus(204).end();
+  Note.findOneAndRemove({ _id: id, userId })
+    .then(result => {
+      if (!result) {
+        next();
+      }
+      res.status(204).end();
     })
     .catch(err => {
       next(err);
     });
-  
 });
 
 module.exports = router;

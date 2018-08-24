@@ -4,9 +4,10 @@ const express = require('express');
 const mongoose = require('mongoose');
 const passport = require('passport');
 
-const router = express.Router();
 const Folder = require('../models/folder');
 const Note = require('../models/note');
+
+const router = express.Router();
 
 // Protect endpoints using JWT Strategy
 router.use('/', passport.authenticate('jwt', { session: false, failWithError: true }));
@@ -14,16 +15,10 @@ router.use('/', passport.authenticate('jwt', { session: false, failWithError: tr
 // GET all /folders 
 // Sort by name
 router.get('/', (req, res, next) => {
-  // console.log('Get All Notes');
-  // const { searchTerm } = req.query;
-  // let filter = {};
-
-  // if(searchTerm) {
-  //   filter = {name: {$regex: searchTerm, $options: 'i'}};
-  // }
+  const userId = req.user.id;
 
   Folder
-    .find()
+    .find({ userId })
     .sort('name')
     .then(result => {
       res.json(result);
@@ -40,15 +35,16 @@ router.get('/', (req, res, next) => {
 router.get('/:id', (req, res, next) => {
 
   const { id } = req.params;
+  const userId = req.user.id;
 
   if(!mongoose.Types.ObjectId.isValid(id)){
     const err = new Error('The `id` is not valid');
-    err.status = 404;
+    err.status = 400;
     return next(err);
   }
 
   Folder
-    .findById(id)
+    .findOne({_id: id, userId})
     .then(result => {
       if (result) {
         res.json(result);
@@ -68,8 +64,9 @@ router.get('/:id', (req, res, next) => {
 // Catch duplicate key error code 11000 and respond with a helpful error message(see below for sample code)
 router.post('/', (req, res, next) => {
   const { name } = req.body;
+  const userId = req.user.id;
 
-  const newItem = { name };
+  const newItem = { name, userId };
 
   if (!name) {
     const err = new Error('Missing `name` in request body');
@@ -98,6 +95,7 @@ router.post('/', (req, res, next) => {
 router.put('/:id', (req, res, next) => {
   const { id } = req.params;
   const { name } = req.body;
+  const userId = req.user.id;
 
   if (!name) {
     const err = new Error('Missing `name` in request body');
@@ -111,12 +109,16 @@ router.put('/:id', (req, res, next) => {
     return next(err);
   }
 
-  const updateObj = { name };
+  const updateObj = { name, userId };
 
   Folder
-    .findByIdAndUpdate(id, { $set: updateObj }, { new: true })
+    .findByIdAndUpdate({_id: id, userId}, updateObj, { new: true })
     .then(result => {
-      res.json(result);
+      if (result) {
+        res.json(result);
+      } else {
+        next();
+      }
     })
     .catch(err => {
       if (err.code === 11000) {
@@ -131,12 +133,20 @@ router.put('/:id', (req, res, next) => {
 // Respond with a 204 status
 router.delete('/:id', (req, res, next) => {
   const { id } = req.params;
+  const userId = req.user.id;
 
   Folder
-    .findByIdAndRemove(id)
+    .findByIdAndRemove({_id:id, userId})
     .then(() => {
-      res.sendStatus(204).end();
+      return Note.update(
+        { folderId: id},
+        { $unset: { folderId: 1 } },
+        { multi: true }
+      );
     })
+    .then(()=> {
+      res.sendStatus(204).end();
+    })      
     .catch(err => {
       next(err);
     });

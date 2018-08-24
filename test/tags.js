@@ -7,18 +7,14 @@ const mongoose = require('mongoose');
 const app = require('../server');
 const { TEST_MONGODB_URI } = require('../config');
 
-const Note = require('../models/note');
-const Folder = require('../models/folder');
 const Tag = require('../models/tag');
 
-const seedNotes = require('../db/seed/notes');
-const seedFolders = require('../db/seed/folders');
 const seedTags = require('../db/seed/tags');
 
 const expect = chai.expect;
 chai.use(chaiHttp);
 
-describe('Noteful API - Tags', function () {
+describe.skip('Noteful API - Tags', function () {
   before(function () {
     return mongoose.connect(TEST_MONGODB_URI)
       .then(() => mongoose.connection.db.dropDatabase());

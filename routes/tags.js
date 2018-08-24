@@ -4,9 +4,10 @@ const express = require('express');
 const mongoose = require('mongoose');
 const passport = require('passport');
 
-const router = express.Router();
 const Tag = require('../models/tag');
 const Note = require('../models/note');
+
+const router = express.Router();
 
 // Protect endpoints using JWT Strategy
 router.use('/', passport.authenticate('jwt', { session: false, failWithError: true }));
@@ -14,8 +15,10 @@ router.use('/', passport.authenticate('jwt', { session: false, failWithError: tr
 // GET all /folders 
 // Sort by name
 router.get('/', (req, res, next) => {
+  const userId = req.user.id;
+
   Tag
-    .find()
+    .find({ userId })
     .sort('name')
     .then(result => {
       res.json(result);
@@ -27,6 +30,8 @@ router.get('/', (req, res, next) => {
 
 router.get('/:id', (req, res, next) => {
   const { id } = req.params;
+  const userId = req.user.id;
+
 
   // Add validation that protects against invalid Mongo ObjectIds and prevents unnecessary database queries.
   if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -36,7 +41,7 @@ router.get('/:id', (req, res, next) => {
   }
 
   Tag
-    .findById(id)
+    .findOne({ _id: id, userId })
     .then(result => {
       if (result) {
         res.json(result);
@@ -51,8 +56,9 @@ router.get('/:id', (req, res, next) => {
 
 router.post('/', (req, res, next) => {
   const { name } = req.body;
+  const userId = req.user.id;
 
-  const newItem = { name };
+  const newItem = { name, userId };
 
   if (!name) {
     const err = new Error('Missing `name` in request body');
@@ -79,6 +85,7 @@ router.post('/', (req, res, next) => {
 router.put('/:id', (req, res, next) => {
   const { id } = req.params;
   const { name } = req.body;
+  const userId = req.user.id;
 
   if (!name) {
     const err = new Error('Missing `name` in request body');
@@ -92,7 +99,7 @@ router.put('/:id', (req, res, next) => {
     return next(err);
   }
 
-  const updateObj = { name };
+  const updateObj = { name, userId };
 
   Tag
     .findByIdAndUpdate(id, updateObj, {new: true})
@@ -110,10 +117,13 @@ router.put('/:id', (req, res, next) => {
 
 router.delete('/:id', (req, res, next) => {
   const { id } = req.params;
+  const userId = req.user.id;
 
-  const tagRemove = Tag.findByIdAndRemove(id);
+  const tagRemove = Tag.findByIdAndRemove({_id: id, userId});
 
-  const removeNoteTag = Note.updateMany({ $pull:{tags: id} });
+  const removeNoteTag = Note.updateMany(
+    { $pull:{tags: id} }
+  );
 
   return Promise.all([tagRemove, removeNoteTag])
     .then(() => {
